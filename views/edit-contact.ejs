@@ -15,8 +15,11 @@
         </div>
       <% } %>
 
-      <form method="post" action="/contact/update">
-        <!-- input hidden ini untuk akses ke nama lama. karena ini krusial -->
+      <!-- # 15.a. ganti action jadi action="/contact?_method=PUT" -->
+      <form method="post" action="/contact?_method=PUT">
+        <!-- # 15.b. input hidden yang mengirimkan ID -->
+        <input type="hidden" name="_id" value="<%= contact._id %>">
+        <!-- # 15.c. input hidden ini untuk akses ke nama lama. karena ini krusial -->
         <input type="hidden" name="oldNama" value="<%= (contact.oldNama) ? contact.oldNama : contact.nama %>">
         <div class="mb-3">
           <label for="nama" class="form-label">Nama</label>

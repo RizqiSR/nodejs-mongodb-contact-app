@@ -6,7 +6,7 @@ const expressLayouts = require("express-ejs-layouts");
 const { body, validationResult, check } = require("express-validator");
 
 // 14. Install & require method-override untuk menggunakan app.delete() / app.put()
-const methodOverride = require('method-override')
+const methodOverride = require("method-override");
 
 // 10. Install 3 modules yg dipakai untuk kasih flash message (menampilkan pesan ketika data berhasil di-tambah/hapus/ubah):
 const session = require("express-session");
@@ -24,7 +24,7 @@ const port = 3000;
 const app = express();
 
 // # 14.a. Setup method-override
-app.use(methodOverride('_method'))
+app.use(methodOverride("_method"));
 
 // 4. Set up EJS sebagai view engine yang digunakan untuk menampilkan layout yang kita buat ke halaman web
 app.set("view engine", "ejs");
@@ -141,17 +141,71 @@ app.post(
 );
 
 // # 5.f.1 Proses Delete 1 contact ( menggunakan app.delete() ). harus install module method-override [lihat poin 14.]
-app.delete('/contact', async (req,res) => {
+app.delete("/contact", async (req, res) => {
   // # 14.b. Buat form untuk button delete ( tambahkan di detail.ejs ). [lihat poin 14.b. di detail.ejs]
   // # 14.e. Cari 1 contact berdasarkan value di form delete (tepatnya hidden input): value="<%= contact.nama %>"
-  const contact = await Contact.findOne({nama: req.body.nama})
+  const contact = await Contact.findOne({ nama: req.body.nama });
 
   // # 14.f. Delete 1 contact berdasarkan ID. karena contact sudah berbentuk object
-  Contact.deleteOne({_id: contact._id}).then((result) => {
-    req.flash('msg', 'Contact has been deleted!')
-    res.redirect('/contact')
-  })
-})
+  Contact.deleteOne({ _id: contact._id }).then((result) => {
+    req.flash("msg", "Contact has been deleted!");
+    res.redirect("/contact");
+  });
+});
+
+// # 5.g. Halaman form edit data contact
+app.get("/contact/edit/:nama", async (req, res) => {
+  const contact = await Contact.findOne({ nama: req.params.nama });
+
+  res.render("edit-contact", {
+    title: "Form edit contact",
+    layout: "layouts/main-layout",
+    contact,
+  });
+});
+
+// 15. Proses ubah data
+app.put(
+  "/contact",
+  [
+    body("nama").custom(async (value, { req }) => {
+      // # 15.d. Cek duplikasi
+      const duplicate = await Contact.findOne({ nama: value });
+      if (value !== req.body.oldNama && duplicate) {
+        throw new Error(`Name ${value} already exists.`);
+      }
+      return true;
+    }),
+    check("email", "Email tidak valid!").isEmail(),
+    check("nohp", "Nomor tidak valid!").isMobilePhone("id-ID"),
+  ],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.render("edit-contact", {
+        title: "Edit contact form",
+        layout: "layouts/main-layout",
+        errors: errors.array(),
+        contact: req.body,
+      });
+    } else {
+      // # 15.e. Ubah data di database
+      Contact.updateOne(
+        { _id: req.body._id },
+        {
+          $set: {
+            nama: req.body.nama,
+            email: req.body.email,
+            nohp: req.body.nohp,
+          },
+        }
+      ).then((result) => {
+        req.flash("msg", "Contact has been edited!");
+        res.redirect("/contact");
+      });
+    }
+  }
+);
 
 // # 5.d. Halaman Detail Contact
 app.get("/contact/:nama", async (req, res) => {
