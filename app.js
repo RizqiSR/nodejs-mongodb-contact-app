@@ -5,6 +5,9 @@ const expressLayouts = require("express-ejs-layouts");
 // 13. install & require express-validator => untuk validasi inputan form 'add-contact'
 const { body, validationResult, check } = require("express-validator");
 
+// 14. Install & require method-override untuk menggunakan app.delete() / app.put()
+const methodOverride = require('method-override')
+
 // 10. Install 3 modules yg dipakai untuk kasih flash message (menampilkan pesan ketika data berhasil di-tambah/hapus/ubah):
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -19,6 +22,9 @@ const Contact = require("./model/contact");
 // 2. inisiasi port & panggil aplikasi express
 const port = 3000;
 const app = express();
+
+// # 14.a. Setup method-override
+app.use(methodOverride('_method'))
 
 // 4. Set up EJS sebagai view engine yang digunakan untuk menampilkan layout yang kita buat ke halaman web
 app.set("view engine", "ejs");
@@ -134,20 +140,18 @@ app.post(
   }
 );
 
-// # 5.f.0. Proses Delete 1 Contact ( menggunakan app.get() )
-app.get("/contact/delete/:nama", async (req, res) => {
-  const contact = await Contact.findOne({nama: req.params.nama});
+// # 5.f.1 Proses Delete 1 contact ( menggunakan app.delete() ). harus install module method-override [lihat poin 14.]
+app.delete('/contact', async (req,res) => {
+  // # 14.b. Buat form untuk button delete ( tambahkan di detail.ejs ). [lihat poin 14.b. di detail.ejs]
+  // # 14.e. Cari 1 contact berdasarkan value di form delete (tepatnya hidden input): value="<%= contact.nama %>"
+  const contact = await Contact.findOne({nama: req.body.nama})
 
-  if (!contact) {
-    res.status(404);
-    res.send("<h1>404</h1>");
-  } else {
-    Contact.deleteOne({_id: contact._id}).then((result) => {
-      req.flash("msg", "Contact has been deleted!");
-      res.redirect("/contact");
-    })
-  }
-});
+  // # 14.f. Delete 1 contact berdasarkan ID. karena contact sudah berbentuk object
+  Contact.deleteOne({_id: contact._id}).then((result) => {
+    req.flash('msg', 'Contact has been deleted!')
+    res.redirect('/contact')
+  })
+})
 
 // # 5.d. Halaman Detail Contact
 app.get("/contact/:nama", async (req, res) => {

@@ -13,7 +13,13 @@
             <h6 class="card-subtitle mb-2 text-body-secondary"><%= contact.nohp %></h6>
             <p class="card-text"><%= contact.email %></p>
             <a href="/contact/edit/<%= contact.nama %>" class="btn btn-info badge">edit</a>
-            <a href="/contact/delete/<%= contact.nama %>" class="btn btn-danger badge" onclick="return confirm('are you sure?')">delete</a>
+            <!-- # 14.b. Buat form untuk button delete ( tambahkan di detail.ejs ) -->
+            <form action="/contact?_method=DELETE" method="POST" class="d-inline">
+              <!-- # 14.c. Kirim data lewat inputan teresmbunyi -->
+              <input type="hidden" name="nama" value="<%= contact.nama %>">
+              <button type="submit" class="btn btn-danger badge" onclick="return confirm('are you sure?')">delete</button>
+            </form>
+            
             <a href="/contact" class="card-link d-block mt-3">&laquo; Back to Contact Page</a>
           </div>
         </div>
