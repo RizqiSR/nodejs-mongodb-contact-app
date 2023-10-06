@@ -2,6 +2,9 @@
 const express = require("express");
 const expressLayouts = require("express-ejs-layouts");
 
+// 13. install & require express-validator => untuk validasi inputan form 'add-contact'
+const { body, validationResult, check } = require("express-validator");
+
 // 10. Install 3 modules yg dipakai untuk kasih flash message (menampilkan pesan ketika data berhasil di-tambah/hapus/ubah):
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -86,10 +89,55 @@ app.get("/contact", async (req, res) => {
   });
 });
 
-// # 5.d. Halaman Detail Contact
+// # 5.d. Halaman form tambah data
+app.get("/contact/add", (req, res) => {
+  res.render("add-contact", {
+    title: "Form add contact",
+    layout: "layouts/main-layout",
+  });
+});
+
+// # 13.a Fitur proses tambah data contact dari form 'add-contact': method="post"
+// -- penting: ingat req.body, karena data akan ditangkap disini (propertinya berisi key-value pair dari submitted data) --
+app.post(
+  "/contact",
+  [
+    body("nama").custom(async (value) => {
+      // # 13.b. Cek duplikat dalam database di mongoDB: namaModelKita.findOne({apaYgMauDiCari: value})
+      const duplicate = await Contact.findOne({ nama: value });
+      if (duplicate) {
+        throw new Error(`Nama ${value} sudah terdaftar!`);
+      }
+      return true;
+    }),
+    // # 13.c. gunakan check() => untuk cek apakah format value dari form inputan sesuai/tidak
+    check("email", "Email tidak valid!").isEmail(),
+    check("nohp", "Nomor tidak valid!").isMobilePhone("id-ID"),
+  ],
+  (req, res) => {
+    // # 13.d. result dari validationResult(req) -> berbentuk property yang ada key-value pair (kalo ERROR: ADA isi seperti msg error-nya, kalo TIDAK error: isinya KOSONG/undefined)
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.render("add-contact", {
+        title: "Add contact form",
+        layout: "layouts/main-layout",
+        errors: errors.array(),
+      });
+    } else {
+      // # 13.e. gunakan namaModelKita.insertMany(req.body)
+      Contact.insertMany(req.body, (error, result) => {
+        // # 13.f. kalo berhasil, kirimkan flash message
+        req.flash("msg", "New contact has beend added!");
+        res.redirect("/contact");
+      });
+    }
+  }
+);
+
+// # 5.e. Halaman Detail Contact
 app.get("/contact/:nama", async (req, res) => {
   // 12. Gunakan findOne, dengan terlebih dahulu panggil model-nya, 'Contact'
-  const contact = await Contact.findOne({nama: req.params.nama})
+  const contact = await Contact.findOne({ nama: req.params.nama });
 
   res.render("detail", {
     layout: "layouts/main-layout",
