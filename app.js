@@ -89,7 +89,7 @@ app.get("/contact", async (req, res) => {
   });
 });
 
-// # 5.d. Halaman form tambah data
+// # 5.e. Halaman form tambah data
 app.get("/contact/add", (req, res) => {
   res.render("add-contact", {
     title: "Form add contact",
@@ -134,7 +134,22 @@ app.post(
   }
 );
 
-// # 5.e. Halaman Detail Contact
+// # 5.f.0. Proses Delete 1 Contact ( menggunakan app.get() )
+app.get("/contact/delete/:nama", async (req, res) => {
+  const contact = await Contact.findOne({nama: req.params.nama});
+
+  if (!contact) {
+    res.status(404);
+    res.send("<h1>404</h1>");
+  } else {
+    Contact.deleteOne({_id: contact._id}).then((result) => {
+      req.flash("msg", "Contact has been deleted!");
+      res.redirect("/contact");
+    })
+  }
+});
+
+// # 5.d. Halaman Detail Contact
 app.get("/contact/:nama", async (req, res) => {
   // 12. Gunakan findOne, dengan terlebih dahulu panggil model-nya, 'Contact'
   const contact = await Contact.findOne({ nama: req.params.nama });
